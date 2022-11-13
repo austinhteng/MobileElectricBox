@@ -17,6 +17,8 @@ class PlayGame : Fragment() {
         val playFragTag = "playFragTag"
     }
     private lateinit var binding: PlayFragBinding
+    private var rows = 10
+    private var cols = 10
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,6 +33,8 @@ class PlayGame : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.gameBoard.addView(GameBoard(requireActivity(), rows, cols))
+        ItemBag(binding.itemsHolder, requireContext())
         Log.d("Play Game Fragment", "view Created")
     }
 }

@@ -1,6 +1,8 @@
 package com.example.eocproject
 
-class GameBoard(private val mainActivity: MainActivity,
+import android.content.Context
+
+class GameBoard(context: Context,
                 rows: Int,
-                cols: Int) : GameBoardView(mainActivity, rows, cols) {
+                cols: Int) : GameBoardView(context, rows, cols) {
 }
