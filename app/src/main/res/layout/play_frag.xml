@@ -25,7 +25,6 @@
             android:id="@+id/startBut"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Start"
             android:layout_gravity="left"
             android:layout_weight="0"></Button>
         <LinearLayout
@@ -37,8 +36,8 @@
         </LinearLayout>
         <ImageButton
             android:id="@+id/trashButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
             android:layout_gravity="right"
             android:src="@drawable/ic_clear_black_24dp"
             android:layout_weight="0"></ImageButton>
