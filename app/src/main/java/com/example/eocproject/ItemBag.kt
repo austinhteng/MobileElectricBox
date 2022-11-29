@@ -7,66 +7,123 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.Bundle
 import android.util.Log
+import android.view.DragEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.DragShadowBuilder
 import android.widget.ImageView
 import android.widget.LinearLayout
+import androidx.core.view.size
+import androidx.lifecycle.LifecycleOwner
+import com.google.android.flexbox.FlexboxLayout
 
-class ItemBag(var layout: LinearLayout, val context: Context) {
-    private var itemsList: ArrayList<Item> = ArrayList()
+class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: GameViewModel) {
+    private var isCreative = false
+    val size = (50 * context.getResources().getDisplayMetrics().density).toInt()
+
+    companion object {
+        val itemTypeList = arrayOf(Item.ItemType.SOURCE, Item.ItemType.DESTINATION, Item.ItemType.CABLE,
+            Item.ItemType.LIGHT, Item.ItemType.PANEL)
+        val sourceList = arrayOf(R.drawable.power_source, R.drawable.destination, R.drawable.cable,
+            R.drawable.light_bulb, R.drawable.solar_panel)
+    }
 
     init {
     }
 
-    fun initDragListener(view : ImageView) {
+    private fun initDragListener(view : Item) {
         //https://developer.android.com/develop/ui/views/touch-and-input/drag-drop
         view.tag = "Item"
         view.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
-                val item = ClipData.Item(v.tag as? CharSequence)
-                val dragData = ClipData(
-                    v.tag as? CharSequence,
-                    arrayOf(ClipDescription.MIMETYPE_TEXT_PLAIN),
-                    item
-                )
-                val myShadow = DragShadowBuilder(v)
+                if (!isCreative && viewModel.getClearMode()) {
+                    viewModel.removeItem(view.type)
+                    return@setOnTouchListener true
+                }
 
+                val myShadow = DragShadowBuilder(v)
                 v.startDragAndDrop(
-                    dragData,  // The data to be dragged
+                    null,  // The data to be dragged
                     myShadow,  // The drag shadow builder
                     v,
                     0          // Flags (not currently used, set to 0)
                 )
-            }
-            true
-        }
 
-        view.setOnDragListener { v, event ->
+                if (!isCreative) {  //Sourced from inventory
+                    viewModel.removeItem(view.type)
+                }
+            }
             true
         }
     }
 
     fun initCreative() {
-        Log.d("ItemBag", "InitCreative")
+        isCreative = true
 
-        //Add icons
-        val size = (50 * context.getResources().getDisplayMetrics().density).toInt()
-        val itemTypeList = arrayOf(Item.ItemType.SOURCE, Item.ItemType.DESTINATION, Item.ItemType.CABLE,
-            Item.ItemType.LIGHT, Item.ItemType.PANEL)
-        val sourceList = arrayOf(R.drawable.power_source, R.drawable.destination, R.drawable.cable,
-            R.drawable.light_bulb, R.drawable.solar_panel)
-        //TODO: Change x icon for clear button to an eraser
-
-//        <a href="http://www.onlinewebfonts.com">oNline Web Fonts</a>
+        //Add icons to layout
         for (i in 0 .. itemTypeList.size-1) {
             val item = Item(itemTypeList[i], Item.Direction.UP, context)
-            itemsList.add(item)
             //make item images a seperate view class to implement numbers? Maybe just display duplicates.
             item.setImageResource(sourceList[i])
             item.layoutParams = LinearLayout.LayoutParams(size, size);
             initDragListener(item)
             layout.addView(item)
+        }
+
+        layout.setOnDragListener { v, event ->
+            //Prevents shadow from jumping back
+            true
+        }
+    }
+
+    fun initInventory(owner: LifecycleOwner) {
+        isCreative = false
+
+        viewModel.observeInventory().observe(owner) {
+            layout.removeAllViews()
+            drawInventory(it)
+            drawMinimumLayoutSize()
+        }
+
+        layout.setOnDragListener { v, event ->
+            val data = event.localState as Item
+            if (event.action == DragEvent.ACTION_DROP) {    //Items dropped into into inventory
+                viewModel.addItem(data.type)
+            }
+            true
+        }
+
+
+    }
+    // Draws items into the ItemBag layout based on itemCounts
+    private fun drawInventory(itemCounts: IntArray) {
+        for (i in 0 until itemCounts.size) {
+            if (itemCounts[i] != 0) {
+                val item = Item(itemTypeList[i], Item.Direction.UP, context)
+                item.setImageResource(sourceList[i])
+                item.layoutParams = LinearLayout.LayoutParams(size, size)
+                initDragListener(item)
+                initTouchToClear(item)
+                layout.addView(item)
+            }
+        }
+    }
+
+    private fun drawMinimumLayoutSize() {
+        if (layout.childCount == 0) {   //Ensure a child exists so the layout takes space.
+            val empty = View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(size, size)
+                visibility = View.INVISIBLE
+            }
+            layout.addView(empty)
+        }
+    }
+
+    private fun initTouchToClear(item: Item) {
+        item.setOnClickListener {
+            if (viewModel.getClearMode()) {
+                viewModel.removeItem(item.type)
+            }
         }
     }
 }

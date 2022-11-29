@@ -2,6 +2,7 @@ package com.example.eocproject
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
@@ -10,7 +11,8 @@ import android.util.Log
 import android.view.DragEvent
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.view.drawToBitmap
+import java.util.TreeMap
+
 
 open class GameBoardView(context: Context, val rows: Int, val cols: Int, val viewModel: GameViewModel) :
     View(context) {
@@ -22,12 +24,21 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
     private var backgroundPaint = Paint().apply {
         style = Paint.Style.FILL
     }
+    companion object var storedBitmaps: MutableMap<Item.ItemType, Pair<Bitmap, Bitmap>> = HashMap()
 
     init {
         border = Paint(Color.BLACK)
         borderWidth = 5
 
+        initBoard()         //Empty state
+        initDragListener()  //Receive drag drops from item bag
+        initTouchListener() //Clear item & rotate logic
 
+        invalidate()
+        Log.d("XXX", "init Gameboard")
+    }
+
+    private fun initBoard() {
         for (i in 0 until rows) {
             val nextRow = java.util.ArrayList<Item>()
             val nextWireRow = ArrayList<Pair<Boolean, Boolean>>()
@@ -38,7 +49,9 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
             grid.add(nextRow)
             wireGrid.add(nextWireRow)
         }
+    }
 
+    private fun initDragListener() {
         this.setOnDragListener { v, event ->
             if (event.action == DragEvent.ACTION_DROP) {
                 val x = (event.x / cellSz).toInt()
@@ -52,13 +65,13 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
 
                 if (itemType != Item.ItemType.CABLE) {
                     //Check if empty or replacing another item
-                    if (!viewModel.getCreative()) {
-                        if (grid[x][y].type != Item.ItemType.EMPTY) {
+                    if (!viewModel.getCreative()) { //TODO: updates inventory depending on origin of item
+                        if (itemType != Item.ItemType.EMPTY) {
                             grid[x][y].visibility = VISIBLE
                         }
                         data.visibility = INVISIBLE
                     }
-                    grid[x][y] = data
+                    grid[x][y] = Item(itemType, direction, context)
                 } else {
                     wireGrid[x][y] = Pair(true, false)
                 }
@@ -67,7 +80,9 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
             }
             true
         }
+    }
 
+    private fun initTouchListener() {
         this.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 val x = (event.x / cellSz).toInt()
@@ -77,7 +92,7 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
                 val direction = grid[x][y].direction
 
                 if (viewModel.getClearMode()) {
-                    if (!viewModel.getCreative()) {
+                    if (!viewModel.getCreative()) { //TODO: this doesn't make sense, needs to update inventory
                         if (grid[x][y].type != Item.ItemType.EMPTY) {
                             grid[x][y].visibility = VISIBLE
                         }
@@ -91,7 +106,7 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
                             invalidate()
                         }
                     }
-                } else {    //Rotation mode
+                } else {    //Rotation mode TODO: this affects all the cells at the same time.
                     if (grid[x][y].type != Item.ItemType.EMPTY) {
                         if (viewModel.getCreative()) {
                             when (grid[x][y].direction) {
@@ -114,9 +129,35 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
             }
             true
         }
+    }
 
-        invalidate()
-        Log.d("XXX", "init Gameboard")
+    private fun initBitmaps() {
+        for (i in 0 until ItemBag.itemTypeList.size) {
+            val base = BitmapFactory.decodeResource(resources, ItemBag.sourceList[i])
+            val unpowered = Bitmap.createScaledBitmap(base, cellSz.toInt(), cellSz.toInt(), true)
+            val powered = when (ItemBag.itemTypeList[i]) {
+                Item.ItemType.SOURCE, Item.ItemType.DESTINATION, Item.ItemType.PANEL -> {
+                    changeBitmapColor(unpowered, Color.GREEN) {pixel -> pixel != 0}
+                }
+                Item.ItemType.LIGHT -> {
+                    changeBitmapColor(unpowered, Color.YELLOW) {pixel -> pixel == 0}
+                }
+                else -> unpowered
+            }
+            storedBitmaps.put(ItemBag.itemTypeList[i], Pair(unpowered, powered))
+        }
+    }
+
+    private fun changeBitmapColor(bitmap: Bitmap, color: Int, targetPixels: (pixel: Int) -> Boolean) : Bitmap {
+        var output = bitmap.copy(bitmap.config, true)
+        var pixels: IntArray = IntArray(output.width * output.height)
+        output.getPixels(pixels, 0, output.width, 0, 0, output.width, output.height)
+        for (i in 0 until pixels.size) {
+            if (targetPixels(pixels[i]))
+                pixels[i] = color
+        }
+        output.setPixels(pixels, 0, output.width, 0, 0, output.width, output.height)
+        return output
     }
 
     private fun drawCell(canvas: Canvas, paint: Paint, x: Int, y: Int) {
@@ -135,17 +176,16 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
         when (type) {
             Item.ItemType.EMPTY -> {
             }
-            else -> {
-                val bitmap = item.drawToBitmap()
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, cellSz.toInt(), cellSz.toInt(), true)
-                val rotatedBitmap = when (direction) {
-                    Item.Direction.LEFT -> {RotateBitmap(scaledBitmap, 270f)}
-                    Item.Direction.UP -> {scaledBitmap}
-                    Item.Direction.RIGHT -> {RotateBitmap(scaledBitmap, 90f)}
-                    Item.Direction.DOWN -> {RotateBitmap(scaledBitmap, 180f)}
+            else -> { //TODO: Maybe not redraw everytime; for alt colors just use another bitmap.
+                val bitmap = if (wireGrid[x][y].second) storedBitmaps.get(type)!!.second
+                            else storedBitmaps.get(type)!!.first
+               val rotatedBitmap = when (direction) {
+                    Item.Direction.LEFT -> {RotateBitmap(bitmap, 270f)}
+                    Item.Direction.UP -> {bitmap}
+                    Item.Direction.RIGHT -> {RotateBitmap(bitmap, 90f)}
+                    Item.Direction.DOWN -> {RotateBitmap(bitmap, 180f)}
                 }
-                val itemColor = if (wireGrid[x][y].second) Paint().apply { color = Color.YELLOW } else border
-                canvas.drawBitmap(rotatedBitmap, x * cellSz, y * cellSz, itemColor)}
+                canvas.drawBitmap(rotatedBitmap, x * cellSz, y * cellSz, null)}
         }
     }
 
@@ -214,6 +254,7 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
             w.toFloat() / cols.toFloat()
         else
             h.toFloat() / rows.toFloat()
+        initBitmaps()
     }
 
     override fun onDraw(canvas: Canvas) {

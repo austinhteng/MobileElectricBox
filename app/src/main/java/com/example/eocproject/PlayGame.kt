@@ -1,15 +1,20 @@
 package com.example.eocproject
 
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import com.example.eocproject.databinding.PlayFragBinding
+import org.w3c.dom.Text
 
 class PlayGame : Fragment() {
     companion object {
@@ -35,14 +40,22 @@ class PlayGame : Fragment() {
         return binding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         game = GameBoard(requireContext(), rows, cols, viewModel)
         binding.gameBoard.addView(game)
-        val itemBag = ItemBag(binding.itemsHolder, requireContext())
+
+        binding.inventory.setBackgroundColor(Color.LTGRAY)
+        val itemBag = ItemBag(binding.inventory, requireContext(), viewModel)
+        itemBag.initInventory(viewLifecycleOwner)
+
         if (viewModel.getCreative()) {
-            itemBag.initCreative()
+            binding.creativeLabel.text = "Creative Inventory:"
+            binding.creativeItemBag.setBackgroundColor(Color.LTGRAY)
+            val creativeBag = ItemBag(binding.creativeItemBag, requireContext(), viewModel)
+            creativeBag.initCreative()
         }
 
         viewModel.setIsRunning(false)
@@ -62,15 +75,15 @@ class PlayGame : Fragment() {
         }
 
         binding.startBut.setBackgroundColor(Color.GREEN)
-        binding.startBut.text = "Power On"
+        binding.startBut.text = "On"
         binding.startBut.setOnClickListener {
-            if (binding.startBut.text == "Power On") {
+            if (binding.startBut.text == "On") {
                 game.startGame()
-                binding.startBut.text = "Power Off"
+                binding.startBut.text = "Off"
                 binding.startBut.setBackgroundColor(Color.RED)
             } else {
                 game.clearPower()
-                binding.startBut.text = "Power On"
+                binding.startBut.text = "On"
                 binding.startBut.setBackgroundColor(Color.GREEN)
             }
         }

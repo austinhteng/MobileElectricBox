@@ -1,6 +1,7 @@
 package com.example.eocproject
 
 import android.content.Context
+import android.widget.Toast
 
 class GameBoard(context: Context,
                 rows: Int,
@@ -18,20 +19,33 @@ class GameBoard(context: Context,
     }
 
     private fun withinBounds(x: Int, y: Int) : Boolean {
-        return x > 0 && x < wireGrid.size && y > 0 && y < wireGrid[0].size
+        return x >= 0 && x < wireGrid.size && y >= 0 && y < wireGrid[0].size
     }
 
-    fun powerOn(x: Int, y: Int) {
+    //Powers each connecting tile with a wire
+    private fun powerOn(x: Int, y: Int) {
         //within bounds and a wire
-        if (withinBounds(x,y) && wireGrid[x][y].first && !wireGrid[x][y].second) {
-            wireGrid[x][y] = Pair(true, true)
-            powerOn(x-1, y)
-            powerOn(x, y-1)
-            powerOn(x+1, y)
-            powerOn(x, y+1)
+        if (!wireGrid[x][y].second) {
+            wireGrid[x][y] = Pair(wireGrid[x][y].first, true)
 
-            when (grid[x][y].type) {
+            if (wireGrid[x][y].first) {
+                if (withinBounds(x - 1, y) && wireGrid[x - 1][y].first)
+                    powerOn(x - 1, y)
+                if (withinBounds(x, y - 1) && wireGrid[x][y - 1].first)
+                    powerOn(x, y - 1)
+                if (withinBounds(x + 1, y) && wireGrid[x + 1][y].first)
+                    powerOn(x + 1, y)
+                if (withinBounds(x, y + 1) && wireGrid[x][y + 1].first)
+                    powerOn(x, y + 1)
+            }
+
+            when (grid[x][y].type) { //Functionality of signalers
                 Item.ItemType.LIGHT -> lightOn(x, y)
+                Item.ItemType.DESTINATION -> {
+                    if (checkDestsPowered()) {
+                        winGame()
+                    }
+                }
                 else -> {}
             }
         }
@@ -46,7 +60,8 @@ class GameBoard(context: Context,
         invalidate()
     }
 
-    fun lightOn(x: Int, y: Int) {
+    //Used when a light on x, y is powered
+    private fun lightOn(x: Int, y: Int) {
         assert(grid[x][y].type == Item.ItemType.LIGHT)
 
         scanDirection(x, y, Item.ItemType.PANEL, Item.Direction.UP)
@@ -55,10 +70,11 @@ class GameBoard(context: Context,
         scanDirection(x, y, Item.ItemType.PANEL, Item.Direction.LEFT)
     }
 
-    fun scanDirection(x: Int, y: Int, goal: Item.ItemType, direction: Item.Direction) {
+    //Checks tiles in direction until a non empty item is found, powers the last tile if it is a goal
+    private fun scanDirection(x: Int, y: Int, goal: Item.ItemType, direction: Item.Direction) {
         when (direction) {
             Item.Direction.RIGHT -> {
-                for (i in x until grid.size) {
+                for (i in x+1 until grid.size) {
                     if (grid[i][y].type == goal) {
                         powerOn(i, y)
                     }
@@ -68,7 +84,7 @@ class GameBoard(context: Context,
                 }
             }
             Item.Direction.DOWN -> {
-                for (i in y until grid[x].size) {
+                for (i in y+1 until grid[x].size) {
                     if (grid[x][i].type == goal) {
                         powerOn(x, i)
                     }
@@ -98,5 +114,24 @@ class GameBoard(context: Context,
                 }
             }
         }
+    }
+
+    private fun winGame() {
+        val toast = Toast(context)
+        toast.setText("You Win!")
+        toast.duration = Toast.LENGTH_LONG
+        toast.show()
+    }
+
+    // Checks each destination is powered.
+    private fun checkDestsPowered() : Boolean {
+        for (i in 0 until grid.size) {
+            for (j in 0 until grid[0].size) {
+                if (grid[i][j].type == Item.ItemType.DESTINATION && !wireGrid[i][j].second) {
+                    return false
+                }
+            }
+        }
+        return true
     }
 }
