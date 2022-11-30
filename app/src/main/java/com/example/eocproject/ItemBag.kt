@@ -22,8 +22,8 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
     val size = (50 * context.getResources().getDisplayMetrics().density).toInt()
 
     companion object {
-        val itemTypeList = arrayOf(Item.ItemType.SOURCE, Item.ItemType.DESTINATION, Item.ItemType.CABLE,
-            Item.ItemType.LIGHT, Item.ItemType.PANEL)
+        val itemTypeList = arrayOf(ItemType.SOURCE, ItemType.DESTINATION, ItemType.CABLE,
+            ItemType.LIGHT, ItemType.PANEL)
         val sourceList = arrayOf(R.drawable.power_source, R.drawable.destination, R.drawable.cable,
             R.drawable.light_bulb, R.drawable.solar_panel)
     }
@@ -36,16 +36,22 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
         view.tag = "Item"
         view.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
+                if (viewModel.getIsRunning()) { //Can't modify state while game runs.
+                    return@setOnTouchListener true
+                }
+
                 if (!isCreative && viewModel.getClearMode()) {
                     viewModel.removeItem(view.type)
                     return@setOnTouchListener true
                 }
 
                 val myShadow = DragShadowBuilder(v)
+                val itemInfo = if (isCreative) ItemData(view.type, view.direction, Origin.GAMEBOARD)
+                    else ItemData(view.type, view.direction, Origin.USER)
                 v.startDragAndDrop(
                     null,  // The data to be dragged
                     myShadow,  // The drag shadow builder
-                    v,
+                    itemInfo,
                     0          // Flags (not currently used, set to 0)
                 )
 
@@ -62,9 +68,9 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
 
         //Add icons to layout
         for (i in 0 .. itemTypeList.size-1) {
-            val item = Item(itemTypeList[i], Item.Direction.UP, context)
+            val item = Item(itemTypeList[i], Direction.UP, context)
             //make item images a seperate view class to implement numbers? Maybe just display duplicates.
-            item.setImageResource(sourceList[i])
+            item.setSrc(sourceList[i])
             item.layoutParams = LinearLayout.LayoutParams(size, size);
             initDragListener(item)
             layout.addView(item)
@@ -86,7 +92,7 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
         }
 
         layout.setOnDragListener { v, event ->
-            val data = event.localState as Item
+            val data = event.localState as ItemData
             if (event.action == DragEvent.ACTION_DROP) {    //Items dropped into into inventory
                 viewModel.addItem(data.type)
             }
@@ -98,12 +104,15 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
     // Draws items into the ItemBag layout based on itemCounts
     private fun drawInventory(itemCounts: IntArray) {
         for (i in 0 until itemCounts.size) {
-            if (itemCounts[i] != 0) {
-                val item = Item(itemTypeList[i], Item.Direction.UP, context)
-                item.setImageResource(sourceList[i])
+            val count = itemCounts[i]
+            if (count != 0) {
+                val item = Item(itemTypeList[i], Direction.UP, context)
+                item.setSrc(sourceList[i])
                 item.layoutParams = LinearLayout.LayoutParams(size, size)
                 initDragListener(item)
                 initTouchToClear(item)
+                item.setText(count.toString())
+                item.invalidate()
                 layout.addView(item)
             }
         }
@@ -121,7 +130,7 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
 
     private fun initTouchToClear(item: Item) {
         item.setOnClickListener {
-            if (viewModel.getClearMode()) {
+            if (viewModel.getClearMode() && !viewModel.getIsRunning()) {
                 viewModel.removeItem(item.type)
             }
         }

@@ -13,6 +13,15 @@ class GameViewModel : ViewModel() {
     private var inventory = MutableLiveData<IntArray>().apply {
         value = IntArray(ItemBag.itemTypeList.size)
     }
+    private var demoCleared = MutableLiveData<Boolean>(false)
+
+    fun resetState() {
+        isRunning.value = false
+        creative.value = false
+        clearMode.value = false
+        inventory.value = IntArray(ItemBag.itemTypeList.size)
+        demoCleared.value = false
+    }
 
     fun getIsRunning() : Boolean {
         return isRunning.value!!
@@ -46,12 +55,12 @@ class GameViewModel : ViewModel() {
         inventory.value = IntArray(ItemBag.itemTypeList.size)
     }
 
-    fun addItem(item: Item.ItemType) {
+    fun addItem(item: ItemType) {
         inventory.value!![ItemBag.itemTypeList.indexOf(item)]++
         inventory.value = inventory.value //notify change
     }
 
-    fun removeItem(item: Item.ItemType) {
+    fun removeItem(item: ItemType) {
         val index = ItemBag.itemTypeList.indexOf(item)
         if (inventory.value!![index] == 0) {
             Log.e("Inventory", "Trying to remove an item that doesn't exist in inventory.")

@@ -25,13 +25,27 @@
         android:orientation="horizontal"
         android:padding="8dp"
         >
-        <Button
-            android:id="@+id/startBut"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="left"
             android:layout_weight=".2"
-            ></Button>
+            android:orientation="vertical">
+            <Button
+                android:id="@+id/startBut"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="0dp"
+                />
+            <Button
+                android:id="@+id/demoBut"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="demo"
+                android:padding="0dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -42,7 +56,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Inventory:"></TextView>
+                android:text="Inventory:"/>
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/inventory"
                 android:layout_width="match_parent"
@@ -55,7 +69,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:visibility="invisible"></View>
+                    android:visibility="invisible"/>
             </com.google.android.flexbox.FlexboxLayout>
             <TextView
                 android:id="@+id/creativeLabel"
@@ -74,15 +88,28 @@
             </com.google.android.flexbox.FlexboxLayout>
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/trashButton"
+        <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_gravity="right"
-            android:src="@drawable/eraser"
+            android:layout_height="wrap_content"
             android:layout_weight=".2"
-            android:scaleType="fitXY"
-            android:padding="4dp"></ImageButton>
+            android:layout_gravity="right"
+            android:orientation="vertical">
+            <ImageButton
+                android:id="@+id/trashButton"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:src="@drawable/eraser"
+                android:scaleType="fitXY"
+                android:padding="4dp"/>
+            <Button
+                android:id="@+id/uploadButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Upload"
+                android:clickable="false"
+                android:padding="0dp"
+                android:visibility="gone"/>
+        </LinearLayout>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

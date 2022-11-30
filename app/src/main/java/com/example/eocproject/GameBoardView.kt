@@ -16,15 +16,19 @@ import java.util.TreeMap
 
 open class GameBoardView(context: Context, val rows: Int, val cols: Int, val viewModel: GameViewModel) :
     View(context) {
-    internal var grid: ArrayList<ArrayList<Item>> = ArrayList()
-    internal var wireGrid: ArrayList<ArrayList<Pair<Boolean, Boolean>>> = ArrayList() //wire, powered
+    internal var grid: ArrayList<ArrayList<ItemData>> = ArrayList()
+    internal var wireGrid: ArrayList<ArrayList<WireInfo>> = ArrayList() //wire, powered
     private var border: Paint
     private var borderWidth: Int = 0
     protected var cellSz: Float = 0F
     private var backgroundPaint = Paint().apply {
         style = Paint.Style.FILL
     }
-    companion object var storedBitmaps: MutableMap<Item.ItemType, Pair<Bitmap, Bitmap>> = HashMap()
+    companion object var storedBitmaps: MutableMap<ItemType, Pair<Bitmap, Bitmap>> = HashMap()
+    private val BLANK_ITEM = ItemData(ItemType.EMPTY, Direction.UP, Origin.GAMEBOARD)
+
+    class WireInfo(var isWire: Boolean, var isPowered: Boolean, var origin: Origin)
+    private val BLANK_WIRE = WireInfo(false, false, Origin.GAMEBOARD)
 
     init {
         border = Paint(Color.BLACK)
@@ -40,11 +44,11 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
 
     private fun initBoard() {
         for (i in 0 until rows) {
-            val nextRow = java.util.ArrayList<Item>()
-            val nextWireRow = ArrayList<Pair<Boolean, Boolean>>()
+            val nextRow = java.util.ArrayList<ItemData>()
+            val nextWireRow = ArrayList<WireInfo>()
             for (j in 0 until cols) {
-                nextRow.add(Item(Item.ItemType.EMPTY, Item.Direction.UP, context))
-                nextWireRow.add(Pair(false, false))
+                nextRow.add(BLANK_ITEM)
+                nextWireRow.add(BLANK_WIRE)
             }
             grid.add(nextRow)
             wireGrid.add(nextWireRow)
@@ -57,23 +61,18 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
                 val x = (event.x / cellSz).toInt()
                 val y = (event.y / cellSz).toInt()
 
-                val data = event.localState as Item
+                val data = event.localState as ItemData
                 val itemType = data.type
                 val direction = data.direction
+                val origin = data.origin
                 Log.d("XXX", String.format("Drop received %d %d", x, y))
                 Log.d("xxx", itemType.toString())
 
-                if (itemType != Item.ItemType.CABLE) {
+                if (itemType != ItemType.CABLE) {
                     //Check if empty or replacing another item
-                    if (!viewModel.getCreative()) { //TODO: updates inventory depending on origin of item
-                        if (itemType != Item.ItemType.EMPTY) {
-                            grid[x][y].visibility = VISIBLE
-                        }
-                        data.visibility = INVISIBLE
-                    }
-                    grid[x][y] = Item(itemType, direction, context)
+                    grid[x][y] = ItemData(itemType, direction, origin)
                 } else {
-                    wireGrid[x][y] = Pair(true, false)
+                    wireGrid[x][y] = WireInfo(true, false, origin)
                 }
 
                 invalidate()
@@ -84,6 +83,9 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
 
     private fun initTouchListener() {
         this.setOnTouchListener { v, event ->
+            if (viewModel.getIsRunning()) { //Can't modify state while game is running
+                return@setOnTouchListener true
+            }
             if (event.action == MotionEvent.ACTION_DOWN) {
                 val x = (event.x / cellSz).toInt()
                 val y = (event.y / cellSz).toInt()
@@ -92,35 +94,37 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
                 val direction = grid[x][y].direction
 
                 if (viewModel.getClearMode()) {
-                    if (!viewModel.getCreative()) { //TODO: this doesn't make sense, needs to update inventory
-                        if (grid[x][y].type != Item.ItemType.EMPTY) {
-                            grid[x][y].visibility = VISIBLE
+                    if (itemType != ItemType.EMPTY) {
+                        if (grid[x][y].origin == Origin.USER) {//Return to inventory
+                            viewModel.addItem(itemType)
                         }
-                    }
-                    if (grid[x][y].type != Item.ItemType.EMPTY) {
-                        grid[x][y] = Item(Item.ItemType.EMPTY, Item.Direction.UP, context)
+                        grid[x][y] = BLANK_ITEM
                         invalidate()
                     } else {
-                        if (wireGrid[x][y].first) {
-                            wireGrid[x][y] = Pair(false, false)
+                        if (wireGrid[x][y].isWire) {
+                            if (wireGrid[x][y].origin == Origin.USER) {//Return to inventory
+                                viewModel.addItem(ItemType.CABLE)
+                            }
+
+                            wireGrid[x][y] = BLANK_WIRE
                             invalidate()
                         }
                     }
                 } else {    //Rotation mode TODO: this affects all the cells at the same time.
-                    if (grid[x][y].type != Item.ItemType.EMPTY) {
+                    if (itemType != ItemType.EMPTY) {
                         if (viewModel.getCreative()) {
-                            when (grid[x][y].direction) {
-                                Item.Direction.UP -> grid[x][y].direction = Item.Direction.RIGHT
-                                Item.Direction.DOWN -> grid[x][y].direction = Item.Direction.LEFT
-                                Item.Direction.LEFT -> grid[x][y].direction = Item.Direction.UP
-                                Item.Direction.RIGHT -> grid[x][y].direction = Item.Direction.DOWN
+                            when (direction) {
+                                Direction.UP -> grid[x][y].direction = Direction.RIGHT
+                                Direction.DOWN -> grid[x][y].direction = Direction.LEFT
+                                Direction.LEFT -> grid[x][y].direction = Direction.UP
+                                Direction.RIGHT -> grid[x][y].direction = Direction.DOWN
                             }
                         } else {
-                            when (grid[x][y].direction) {
-                                Item.Direction.UP -> grid[x][y].direction = Item.Direction.DOWN
-                                Item.Direction.DOWN -> grid[x][y].direction = Item.Direction.UP
-                                Item.Direction.LEFT -> grid[x][y].direction = Item.Direction.RIGHT
-                                Item.Direction.RIGHT -> grid[x][y].direction = Item.Direction.LEFT
+                            when (direction) {
+                                Direction.UP -> grid[x][y].direction = Direction.DOWN
+                                Direction.DOWN -> grid[x][y].direction = Direction.UP
+                                Direction.LEFT -> grid[x][y].direction = Direction.RIGHT
+                                Direction.RIGHT -> grid[x][y].direction = Direction.LEFT
                             }
                         }
                         invalidate()
@@ -136,10 +140,10 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
             val base = BitmapFactory.decodeResource(resources, ItemBag.sourceList[i])
             val unpowered = Bitmap.createScaledBitmap(base, cellSz.toInt(), cellSz.toInt(), true)
             val powered = when (ItemBag.itemTypeList[i]) {
-                Item.ItemType.SOURCE, Item.ItemType.DESTINATION, Item.ItemType.PANEL -> {
+                ItemType.SOURCE, ItemType.DESTINATION, ItemType.PANEL -> {
                     changeBitmapColor(unpowered, Color.GREEN) {pixel -> pixel != 0}
                 }
-                Item.ItemType.LIGHT -> {
+                ItemType.LIGHT -> {
                     changeBitmapColor(unpowered, Color.YELLOW) {pixel -> pixel == 0}
                 }
                 else -> unpowered
@@ -168,22 +172,22 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
         val type = item.type
         val direction = item.direction
 
-        if (wireGrid[x][y].first) {
-            val wireColor = if (wireGrid[x][y].second) Paint().apply {color = Color.GREEN} else Paint().apply {color = Color.BLUE}
+        if (wireGrid[x][y].isWire) {
+            val wireColor = if (wireGrid[x][y].isPowered) Paint().apply {color = Color.GREEN} else Paint().apply {color = Color.BLUE}
             drawWire(canvas, x, y, wireColor) //Different color if powered
         }
 
         when (type) {
-            Item.ItemType.EMPTY -> {
+            ItemType.EMPTY -> {
             }
             else -> { //TODO: Maybe not redraw everytime; for alt colors just use another bitmap.
-                val bitmap = if (wireGrid[x][y].second) storedBitmaps.get(type)!!.second
+                val bitmap = if (wireGrid[x][y].isPowered) storedBitmaps.get(type)!!.second
                             else storedBitmaps.get(type)!!.first
                val rotatedBitmap = when (direction) {
-                    Item.Direction.LEFT -> {RotateBitmap(bitmap, 270f)}
-                    Item.Direction.UP -> {bitmap}
-                    Item.Direction.RIGHT -> {RotateBitmap(bitmap, 90f)}
-                    Item.Direction.DOWN -> {RotateBitmap(bitmap, 180f)}
+                    Direction.LEFT -> {RotateBitmap(bitmap, 270f)}
+                    Direction.UP -> {bitmap}
+                    Direction.RIGHT -> {RotateBitmap(bitmap, 90f)}
+                    Direction.DOWN -> {RotateBitmap(bitmap, 180f)}
                 }
                 canvas.drawBitmap(rotatedBitmap, x * cellSz, y * cellSz, null)}
         }
@@ -220,22 +224,22 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
         val cellTopWall = y * cellSz
         var adjCount = 0
 
-        if (x > 0 && wireGrid[x-1][y].first) {
+        if (x > 0 && wireGrid[x-1][y].isWire) {
             canvas.drawRect(cellLeftWall, cellTopWall + wireOffset,
                 cellLeftWall + (cellSz / 2) + wireSize / 2, cellTopWall + cellSz - wireOffset, color)
             adjCount++
         }
-        if (x < wireGrid.size-1 && wireGrid[x+1][y].first) {
+        if (x < wireGrid.size-1 && wireGrid[x+1][y].isWire) {
             canvas.drawRect(cellLeftWall + (cellSz / 2) - wireSize / 2, cellTopWall + wireOffset,
                 cellLeftWall + cellSz, cellTopWall + cellSz - wireOffset, color)
             adjCount++
         }
-        if (y > 0 && wireGrid[x][y-1].first) {
+        if (y > 0 && wireGrid[x][y-1].isWire) {
             canvas.drawRect(cellLeftWall + wireOffset, cellTopWall,
                 cellLeftWall + cellSz - wireOffset, cellTopWall + (cellSz / 2) + wireSize / 2, color)
             adjCount++
         }
-        if (y < wireGrid[x].size-1 && wireGrid[x][y+1].first) {
+        if (y < wireGrid[x].size-1 && wireGrid[x][y+1].isWire) {
             canvas.drawRect(cellLeftWall + wireOffset, cellTopWall + (cellSz / 2) - wireSize / 2,
                 cellLeftWall + cellSz - wireOffset, cellTopWall + cellSz, color)
             adjCount++
@@ -257,7 +261,7 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
         initBitmaps()
     }
 
-    override fun onDraw(canvas: Canvas) {
+    override fun onDraw(canvas: Canvas) { //TODO: This should be done on seperate thread, skipping frames.
         super.onDraw(canvas)
         backgroundPaint.color = Color.LTGRAY
         canvas.drawPaint(backgroundPaint)

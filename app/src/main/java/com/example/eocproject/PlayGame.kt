@@ -56,6 +56,12 @@ class PlayGame : Fragment() {
             binding.creativeItemBag.setBackgroundColor(Color.LTGRAY)
             val creativeBag = ItemBag(binding.creativeItemBag, requireContext(), viewModel)
             creativeBag.initCreative()
+
+            binding.demoBut.visibility = View.VISIBLE
+            binding.demoBut.setOnClickListener {  }
+
+            binding.uploadButton.visibility = View.VISIBLE
+            binding.uploadButton.setOnClickListener {  }
         }
 
         viewModel.setIsRunning(false)
@@ -75,15 +81,15 @@ class PlayGame : Fragment() {
         }
 
         binding.startBut.setBackgroundColor(Color.GREEN)
-        binding.startBut.text = "On"
+        binding.startBut.text = "Power On"
         binding.startBut.setOnClickListener {
-            if (binding.startBut.text == "On") {
+            if (binding.startBut.text == "Power On") {
                 game.startGame()
-                binding.startBut.text = "Off"
+                binding.startBut.text = "Power Off"
                 binding.startBut.setBackgroundColor(Color.RED)
             } else {
-                game.clearPower()
-                binding.startBut.text = "On"
+                game.endGame()
+                binding.startBut.text = "Power On"
                 binding.startBut.setBackgroundColor(Color.GREEN)
             }
         }
