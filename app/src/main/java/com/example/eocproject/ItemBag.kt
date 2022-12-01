@@ -40,7 +40,7 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
                     return@setOnTouchListener true
                 }
 
-                if (!isCreative && viewModel.getClearMode()) {
+                if (!isCreative && viewModel.getClearMode() && viewModel.isCreative) {
                     viewModel.removeItem(view.type)
                     return@setOnTouchListener true
                 }
@@ -130,7 +130,7 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
 
     private fun initTouchToClear(item: Item) {
         item.setOnClickListener {
-            if (viewModel.getClearMode() && !viewModel.getIsRunning()) {
+            if (viewModel.getClearMode() && !viewModel.getIsRunning() && viewModel.isCreative) {
                 viewModel.removeItem(item.type)
             }
         }

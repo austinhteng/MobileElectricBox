@@ -1,41 +1,76 @@
 package com.example.eocproject
 
+import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.commit
-import androidx.fragment.app.viewModels
+import com.example.eocproject.Catalog.CatalogViewModel
+import com.example.eocproject.Catalog.ViewModelDBHelper
 import com.example.eocproject.databinding.PlayFragBinding
-import org.w3c.dom.Text
 
-class PlayGame(val isCreative: Boolean) : Fragment() {
+
+class PlayGame() : Fragment() {
     companion object {
-        fun newInstance(isCreative: Boolean) : PlayGame {
-            return PlayGame(isCreative)
+        fun newInstance() : PlayGame {
+            return PlayGame()
         }
 
         val playFragTag = "playFragTag"
         val demoPlayTag = "demoPlayTag"
         val gridTag = "gridTag"
         val wireTag = "wireTag"
+        val invTag =  "invTag"
+        val demoReturn = "demoReturn"
+        val nameTag = "nameTag"
     }
-
-
+    private val viewModel: GameViewModel by activityViewModels()
+    private val catalogViewModel : CatalogViewModel by activityViewModels()
+    private var levelName = ""
     private lateinit var binding: PlayFragBinding
     private var rows = 10
     private var cols = 10
-    private val viewModel: GameViewModel by activityViewModels()
+
     private lateinit var game : GameBoard
+    private var resultLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Get the data that was returned, and display it
+            //SSS
+            val data: Intent? = result.data
+            data?.extras?.apply {
+                viewModel.setDemoCleared(data.getBooleanExtra(demoReturn, false))
+            }
+            //EEE // XXX Write me
+        } else {
+            Log.w(javaClass.simpleName, "Bad activity return code ${result.resultCode}")
+        }
+    }
+
+    private var nameLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Get the data that was returned, and display it
+            //SSS
+            val data: Intent? = result.data
+            data?.extras?.apply {
+                levelName = data.getStringExtra(nameTag)!!
+            }
+            //EEE // XXX Write me
+        } else {
+            Log.w(javaClass.simpleName, "Bad activity return code ${result.resultCode}")
+        }
+    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,11 +86,12 @@ class PlayGame(val isCreative: Boolean) : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val bundle = arguments
+        val bundle = requireActivity().intent
 
         game = GameBoard(requireContext(), rows, cols, viewModel)
-        if (bundle != null) {
-            game.unpack(bundle)
+        if (bundle.hasExtra(gridTag) && bundle.hasExtra(wireTag) && bundle.hasExtra(invTag)) {
+            game.unpack(bundle.extras!!)
+            viewModel.setInventory(bundle.getIntArrayExtra(invTag)!!)
         }
 
         binding.gameBoard.addView(game)
@@ -64,7 +100,7 @@ class PlayGame(val isCreative: Boolean) : Fragment() {
         val itemBag = ItemBag(binding.inventory, requireContext(), viewModel)
         itemBag.initInventory(viewLifecycleOwner)
 
-        if (isCreative) {
+        if (viewModel.isCreative) {
             binding.creativeLabel.text = "Creative Inventory:"
             binding.creativeItemBag.setBackgroundColor(Color.LTGRAY)
             val creativeBag = ItemBag(binding.creativeItemBag, requireContext(), viewModel)
@@ -83,6 +119,22 @@ class PlayGame(val isCreative: Boolean) : Fragment() {
                 } else {
                     binding.demoBut.isClickable = true
                     binding.uploadButton.isClickable = true
+                }
+            }
+
+            viewModel.observeDemoCleared().observe(viewLifecycleOwner) {
+                if (it!!) {
+                    binding.uploadButton.setOnClickListener {
+                        val name = promptName()
+
+                        uploadLevel(name)
+                    }
+                } else {
+                    binding.uploadButton.setOnClickListener {
+                        val toast = Toast(context)
+                        toast.setText("Please complete the level in demo to upload.")
+                        toast.show()
+                    }
                 }
             }
         }
@@ -124,27 +176,29 @@ class PlayGame(val isCreative: Boolean) : Fragment() {
             val grid = game.getGrid()
             val wire = game.getWireGrid()
             val inv = viewModel.getInventory()
-            var bundle = Bundle().apply {
-                putParcelable(gridTag, grid)
-                putParcelable(wireTag, wire)
-            }
 
-//            Log.d("test", grid.readBytes().size.toString())
-//            game.loadGrid(grid, wire)
-//            viewModel.loadInventory(inv)
-            parentFragmentManager.commit {  //Start playfrag in user mode.
-                val frag = newInstance(false)
-                frag.arguments = bundle
-                viewModel.resetState()
-                viewModel.setInventory(inv)
-                add(R.id.mainScreen, frag, demoPlayTag)
-                addToBackStack(demoPlayTag)
-                setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                show(frag)
-                hide(parentFragmentManager.findFragmentByTag(playFragTag)!!)
-            }
+            val demo = Intent(context, DemoActivity::class.java)
+
+            demo.putExtra(gridTag, grid)
+            demo.putExtra(wireTag, wire)
+            demo.putExtra(invTag, inv)
+
+            resultLauncher.launch(demo)
         }
     }
 
+    fun promptName() : String {
+        val name = Intent(context, NamePromptActivity::class.java)
 
+        nameLauncher.launch(name)
+        return levelName
+    }
+    fun uploadLevel(name: String) {
+        game.returnInv()
+        val gridFile = game.exportGrid()
+        val wireFile = game.exportWireGrid()
+        val invFile = viewModel.exportInventory()
+
+        catalogViewModel.uploadLevel(gridFile, wireFile, invFile, name)
+    }
 }

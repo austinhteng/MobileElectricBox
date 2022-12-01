@@ -15,12 +15,14 @@ class GameViewModel : ViewModel() {
         value = IntArray(ItemBag.itemTypeList.size)
     }
     private var demoCleared = MutableLiveData<Boolean>(false)
+    var isCreative = false
 
     fun resetState() {
         isRunning.value = false
         clearMode.value = false
         inventory.value = IntArray(ItemBag.itemTypeList.size)
         demoCleared.value = false
+        isCreative = false
     }
 
     fun getIsRunning() : Boolean {
@@ -45,6 +47,18 @@ class GameViewModel : ViewModel() {
 
     fun observeClearMode() : LiveData<Boolean> {
         return clearMode
+    }
+
+    fun getDemoCleared() : Boolean {
+        return demoCleared.value!!
+    }
+
+    fun setDemoCleared(newVal : Boolean) {
+        demoCleared.value = newVal
+    }
+
+    fun observeDemoCleared() : LiveData<Boolean> {
+        return demoCleared
     }
 
     fun resetInventory() {

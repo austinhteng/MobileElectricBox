@@ -3,10 +3,13 @@ package com.example.eocproject
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import java.io.ByteArrayInputStream
 import java.io.File
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 
 class GameBoard(context: Context,
                 rows: Int,
@@ -132,10 +135,16 @@ class GameBoard(context: Context,
         toast.setText("You Win!")
         toast.duration = Toast.LENGTH_SHORT
         toast.show()
+        if (!viewModel.isCreative) {
+            viewModel.setDemoCleared(true)
+        }
     }
 
     // Checks each destination is powered.
     private fun checkDestsPowered() : Boolean {
+        if (viewModel.getInventory()[ItemBag.itemTypeList.indexOf(ItemType.DESTINATION)] != 0) {
+            return false
+        }
         for (i in 0 until grid.grid.size) {
             for (j in 0 until grid[0].size) {
                 if (grid[i][j].type == ItemType.DESTINATION && !wireGrid[i][j].isPowered) {
@@ -197,7 +206,6 @@ class GameBoard(context: Context,
         for (i in 0 until grid.grid.size) {
             for (j in 0 until grid[0].size) {
                 if (grid[i][j].origin == Origin.USER) {
-                    viewModel.addItem(grid[i][j].type)
                     clearAtCell(i, j)
                 }
                 if (wireGrid[i][j].origin == Origin.USER) {
@@ -245,6 +253,8 @@ class GameBoard(context: Context,
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     fun unpack(bundle: Bundle) {
         grid = bundle.getParcelable(PlayGame.gridTag, Grid::class.java)!!
+
+        invalidate()
         wireGrid = bundle.getParcelable(PlayGame.wireTag, WireGrid::class.java)!!
         invalidate()
     }

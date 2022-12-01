@@ -1,7 +1,10 @@
 package com.example.eocproject
 
+import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
+import android.util.Log
+import androidx.annotation.RequiresApi
 
 class Grid() : Parcelable{
     var grid : ArrayList<ArrayList<ItemData>> = ArrayList()
@@ -27,13 +30,12 @@ class Grid() : Parcelable{
         val rows = parcel.readInt()
         val cols = parcel.readInt()
         initGrid(rows, cols)
-        while (parcel.dataAvail() != 0) {
-            val x = parcel.readInt()
-            val y = parcel.readInt()
-            val type = parcel.readInt()
-            val direction = parcel.readInt()
-            grid[x][y].type = ItemType.fromInt(type)
-            grid[x][y].direction = Direction.fromInt(direction)
+        for (i in 0 until rows) {
+            for (j in 0 until cols) {
+                val type = parcel.readInt()
+                val direction = parcel.readInt()
+                grid[i][j] = ItemData(ItemType.fromInt(type), Direction.fromInt(direction), Origin.GAMEBOARD)
+            }
         }
     }
 
@@ -42,12 +44,8 @@ class Grid() : Parcelable{
         parcel.writeInt(grid[0].size)
         for (i in 0 until grid.size) {
             for (j in 0 until grid[0].size) {
-                if (grid[i][j].type != ItemType.EMPTY &&  grid[i][j].origin == Origin.GAMEBOARD) {
-                    parcel.writeInt(i)
-                    parcel.writeInt(j)
-                    parcel.writeInt(grid[i][j].type.value)
-                    parcel.writeInt(grid[i][j].direction.value)
-                }
+                parcel.writeInt(grid[i][j].type.value)
+                parcel.writeInt(grid[i][j].direction.value)
             }
         }
     }
@@ -69,14 +67,15 @@ class Grid() : Parcelable{
 
 class WireGrid() : Parcelable {
     var wireGrid : ArrayList<ArrayList<GameBoardView.WireInfo>> = ArrayList()
+    @RequiresApi(Build.VERSION_CODES.Q)
     constructor(parcel: Parcel) : this() {
         val rows = parcel.readInt()
         val cols = parcel.readInt()
         initGrid(rows, cols)
-        while (parcel.dataAvail() != 0) {
-            val x = parcel.readInt()
-            val y = parcel.readInt()
-            wireGrid[x][y].isWire = true
+        for (i in 0 until rows) {
+            for (j in 0 until cols) {
+                wireGrid[i][j] = GameBoardView.WireInfo(parcel.readBoolean(), false, Origin.GAMEBOARD)
+            }
         }
     }
 
@@ -94,15 +93,13 @@ class WireGrid() : Parcelable {
         return wireGrid[x]
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(wireGrid.size)
         parcel.writeInt(wireGrid[0].size)
         for (i in 0 until wireGrid.size) {
             for (j in 0 until wireGrid[0].size) {
-                if (wireGrid[i][j].isWire && wireGrid[i][j].origin == Origin.GAMEBOARD) {
-                    parcel.writeInt(i)
-                    parcel.writeInt(j)
-                }
+                parcel.writeBoolean(wireGrid[i][j].isWire)
             }
         }
     }
@@ -112,6 +109,7 @@ class WireGrid() : Parcelable {
     }
 
     companion object CREATOR : Parcelable.Creator<WireGrid> {
+        @RequiresApi(Build.VERSION_CODES.Q)
         override fun createFromParcel(parcel: Parcel): WireGrid {
             return WireGrid(parcel)
         }

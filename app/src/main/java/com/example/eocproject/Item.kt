@@ -20,8 +20,11 @@ enum class ItemType(val value: Int) {
     }
 }
 
-enum class Origin {
-    USER, GAMEBOARD
+enum class Origin(val value: Int) {
+    USER(0), GAMEBOARD(1);
+    companion object {
+        fun fromInt(value: Int) = Origin.values().first { it.value == value }
+    }
 }
 
 class Item (var type : ItemType, var direction : Direction, context: Context) : RelativeLayout(context) {

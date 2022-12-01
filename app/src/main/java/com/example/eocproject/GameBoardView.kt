@@ -14,8 +14,8 @@ import android.view.View
 import java.util.TreeMap
 
 
-open class GameBoardView(context: Context, val rows: Int, val cols: Int, val viewModel: GameViewModel) :
-    View(context) {
+open class GameBoardView(context: Context, val rows: Int, val cols: Int,
+                         val viewModel: GameViewModel) : View(context) {
     internal var grid = Grid().apply { initGrid(rows, cols) }
     internal var wireGrid = WireGrid().apply { initGrid(rows, cols) }
     private var border: Paint
@@ -45,16 +45,6 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
     }
 
     internal fun initBoard() {
-//        for (i in 0 until rows) {
-//            val nextRow = java.util.ArrayList<ItemData>()
-//            val nextWireRow = ArrayList<WireInfo>()
-//            for (j in 0 until cols) {
-//                nextRow.add(BLANK_ITEM)
-//                nextWireRow.add(BLANK_WIRE)
-//            }
-//            grid.add(nextRow)
-//            wireGrid.add(nextWireRow)
-//        }
         grid.initGrid(rows, cols)
         wireGrid.initGrid(rows, cols)
     }
@@ -69,8 +59,9 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
                 val itemType = data.type
                 val direction = data.direction
                 val origin = data.origin
-                Log.d("XXX", String.format("Drop received %d %d", x, y))
-                Log.d("xxx", itemType.toString())
+                if (origin == Origin.GAMEBOARD) {
+                    viewModel.setDemoCleared(false)
+                }
 
                 if (itemType != ItemType.CABLE) {
                     //Check if empty or replacing another item
@@ -96,11 +87,12 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
 
                 val itemType = grid[x][y].type
                 val direction = grid[x][y].direction
+                val origin = grid[x][y].origin
 
                 if (viewModel.getClearMode()) {
                     clearAtCell(x, y)
-                } else {    //Rotation mode TODO: this affects all the cells at the same time.
-                    if (itemType != ItemType.EMPTY) {
+                } else {    //Rotation mode
+                    if (itemType != ItemType.EMPTY && hasPerms(origin)) {
                         when (direction) {
                             Direction.UP -> grid[x][y].direction = Direction.RIGHT
                             Direction.DOWN -> grid[x][y].direction = Direction.LEFT
@@ -116,17 +108,27 @@ open class GameBoardView(context: Context, val rows: Int, val cols: Int, val vie
         }
     }
 
+    private fun hasPerms(origin: Origin) : Boolean {
+        return !(origin == Origin.GAMEBOARD && !viewModel.isCreative)
+    }
+
+    //First tries to clear item, then wire
     fun clearAtCell(x: Int, y: Int) {
-        if (grid[x][y].type != ItemType.EMPTY) {
+        val originItem = grid[x][y].origin
+        if (grid[x][y].type != ItemType.EMPTY && hasPerms(originItem)) {
             if (grid[x][y].origin == Origin.USER) {//Return to inventory
                 viewModel.addItem(grid[x][y].type)
+            } else {
+                viewModel.setDemoCleared(false)
             }
             grid[x][y] = BLANK_ITEM
             invalidate()
         } else {
-            if (wireGrid[x][y].isWire) {
+            if (wireGrid[x][y].isWire && hasPerms(wireGrid[x][y].origin)) {
                 if (wireGrid[x][y].origin == Origin.USER) {//Return to inventory
                     viewModel.addItem(ItemType.CABLE)
+                } else {
+                    viewModel.setDemoCleared(false)
                 }
 
                 wireGrid[x][y] = BLANK_WIRE

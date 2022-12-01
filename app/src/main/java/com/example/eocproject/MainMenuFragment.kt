@@ -21,7 +21,7 @@ class MainMenuFragment: Fragment() {
         val mainMenuFragTag = "mainMenuFragTag"
     }
     private lateinit var binding : ContentHomeBinding
-    private val gameViewModel : GameViewModel by activityViewModels()
+    private val viewModel : GameViewModel by activityViewModels()
 
 
     override fun onCreateView(
@@ -37,8 +37,9 @@ class MainMenuFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.newProjectBut.setOnClickListener {
+            viewModel.isCreative = true
             parentFragmentManager.commit {
-                val frag = PlayGame.newInstance(true)
+                val frag = PlayGame.newInstance()
                 add(R.id.mainScreen, frag, PlayGame.playFragTag)
                 addToBackStack(PlayGame.playFragTag)
                 setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)

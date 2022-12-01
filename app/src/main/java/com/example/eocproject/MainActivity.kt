@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
+import android.view.KeyEvent
+import android.widget.Toast
 import com.example.eocproject.databinding.ActivityMainBinding
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.commit

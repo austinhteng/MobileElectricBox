@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "651430337322",
+    "project_id": "powerboxgame",
+    "storage_bucket": "powerboxgame.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:651430337322:android:31c0abcfad1d9a10d89c53",
+        "android_client_info": {
+          "package_name": "com.example.eocproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "651430337322-bbvb5qe1n6vo6s6dg0rut80ltgre0cln.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.eocproject",
+            "certificate_hash": "8565fe989a109c9090e36fbd2291de27a950e493"
+          }
+        },
+        {
+          "client_id": "651430337322-a6rqba3qipkreusap4pnbbpeciit9i97.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD14ZyQ7IlTgbEa8mA1cPugExueNrmARFc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "651430337322-a6rqba3qipkreusap4pnbbpeciit9i97.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
