@@ -37,9 +37,8 @@ class MainMenuFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.newProjectBut.setOnClickListener {
-            gameViewModel.setCreative(true)
             parentFragmentManager.commit {
-                val frag = PlayGame.newInstance()
+                val frag = PlayGame.newInstance(true)
                 add(R.id.mainScreen, frag, PlayGame.playFragTag)
                 addToBackStack(PlayGame.playFragTag)
                 setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)

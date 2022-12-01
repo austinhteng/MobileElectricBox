@@ -7,11 +7,17 @@ import android.widget.RelativeLayout
 import com.example.eocproject.databinding.ItemIconBinding
 
 
-enum class Direction {
-    LEFT, UP, RIGHT, DOWN
+enum class Direction(val value: Int) {
+    LEFT(0), UP(1), RIGHT(2), DOWN(3);
+    companion object {
+        fun fromInt(value: Int) = Direction.values().first { it.value == value }
+    }
 }
-enum class ItemType {
-    EMPTY, LIGHT, SOURCE, DESTINATION, CABLE, PANEL
+enum class ItemType(val value: Int) {
+    EMPTY(0), LIGHT(1), SOURCE(2), DESTINATION(3), CABLE(4), PANEL(5);
+    companion object {
+        fun fromInt(value: Int) = ItemType.values().first { it.value == value }
+    }
 }
 
 enum class Origin {

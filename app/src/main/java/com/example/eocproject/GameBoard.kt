@@ -1,7 +1,12 @@
 package com.example.eocproject
 
 import android.content.Context
+import android.os.Build
+import android.os.Bundle
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import java.io.ByteArrayInputStream
+import java.io.File
 
 class GameBoard(context: Context,
                 rows: Int,
@@ -25,7 +30,7 @@ class GameBoard(context: Context,
     }
 
     private fun withinBounds(x: Int, y: Int) : Boolean {
-        return x >= 0 && x < wireGrid.size && y >= 0 && y < wireGrid[0].size
+        return x >= 0 && x < wireGrid.wireGrid.size && y >= 0 && y < wireGrid[0].size
     }
 
     //Powers each connecting tile with a wire
@@ -80,7 +85,7 @@ class GameBoard(context: Context,
     private fun scanDirection(x: Int, y: Int, goal: ItemType, direction: Direction) {
         when (direction) {
             Direction.RIGHT -> {
-                for (i in x+1 until grid.size) {
+                for (i in x+1 until grid.grid.size) {
                     if (grid[i][y].type == goal) {
                         powerOn(i, y)
                     }
@@ -131,7 +136,7 @@ class GameBoard(context: Context,
 
     // Checks each destination is powered.
     private fun checkDestsPowered() : Boolean {
-        for (i in 0 until grid.size) {
+        for (i in 0 until grid.grid.size) {
             for (j in 0 until grid[0].size) {
                 if (grid[i][j].type == ItemType.DESTINATION && !wireGrid[i][j].isPowered) {
                     return false
@@ -139,5 +144,108 @@ class GameBoard(context: Context,
             }
         }
         return true
+    }
+
+    //https://stackoverflow.com/a/67229929
+    private fun write4BytesToBuffer(data: Int) : ByteArray {
+        val buffer = ByteArray(4)
+        buffer[0] = (data shr 0).toByte()
+        buffer[1] = (data shr 8).toByte()
+        buffer[2] = (data shr 16).toByte()
+        buffer[3] = (data shr 24).toByte()
+        return buffer
+    }
+
+    private fun read4BytesFromBuffer(buffer: ByteArray, offset: Int): Int {
+        return (buffer[offset + 3].toInt() shl 24) or
+                (buffer[offset + 2].toInt() and 0xff shl 16) or
+                (buffer[offset + 1].toInt() and 0xff shl 8) or
+                (buffer[offset + 0].toInt() and 0xff)
+    }
+
+    fun exportGrid() : File {
+        val fileGrid = MainActivity.localLevelFile("tempGrid")
+        fileGrid.writeBytes(write4BytesToBuffer(grid.grid.size))
+        fileGrid.writeBytes(write4BytesToBuffer(grid[0].size))
+        for (i in 0 until grid.grid.size) {
+            for (j in 0 until grid[0].size) {
+                if (grid[i][j].type != ItemType.EMPTY &&  grid[i][j].origin == Origin.GAMEBOARD) {
+                    fileGrid.writeBytes(write4BytesToBuffer(i))
+                    fileGrid.writeBytes(write4BytesToBuffer(j))
+                    fileGrid.writeBytes(write4BytesToBuffer(grid[i][j].type.value))
+                    fileGrid.writeBytes(write4BytesToBuffer(grid[i][j].direction.value))
+                }
+            }
+        }
+        return fileGrid
+    }
+
+    fun exportWireGrid() : File {
+        val fileWire = MainActivity.localLevelFile("tempWire")
+        for (i in 0 until wireGrid.wireGrid.size) {
+            for (j in 0 until wireGrid[0].size) {
+                if (wireGrid[i][j].isWire && wireGrid[i][j].origin == Origin.GAMEBOARD) {
+                    fileWire.writeBytes(write4BytesToBuffer(i))
+                    fileWire.writeBytes(write4BytesToBuffer(j))
+                }
+            }
+        }
+        return fileWire
+    }
+
+    fun returnInv() {
+        for (i in 0 until grid.grid.size) {
+            for (j in 0 until grid[0].size) {
+                if (grid[i][j].origin == Origin.USER) {
+                    viewModel.addItem(grid[i][j].type)
+                    clearAtCell(i, j)
+                }
+                if (wireGrid[i][j].origin == Origin.USER) {
+                    viewModel.addItem(ItemType.CABLE)
+                    wireGrid[i][j] = BLANK_WIRE
+                }
+            }
+        }
+    }
+
+    fun loadGrid(gridFile: File, wireGridFile: File) {
+        initBoard()
+
+        val gridBuffer = gridFile.readBytes()
+        for (i in 2 until gridBuffer.size/(4 * 4)) { // 1st 4 for bytes of int, 2nd 4 for 4 ints per item
+            val x = read4BytesFromBuffer(gridBuffer, i*16)
+            val y = read4BytesFromBuffer(gridBuffer, i*16 + 4)
+            val type = read4BytesFromBuffer(gridBuffer, i*16 + 8)
+            val direction = read4BytesFromBuffer(gridBuffer, i*16 + 12)
+            grid[x][y].type = ItemType.fromInt(type)
+            grid[x][y].direction = Direction.fromInt(direction)
+        }
+
+        val wireBuffer = wireGridFile.readBytes()
+        for (i in 0 until wireBuffer.size/(4 * 2)) {
+            val x = read4BytesFromBuffer(wireBuffer, i*8)
+            val y = read4BytesFromBuffer(wireBuffer, i*8 + 4)
+            wireGrid[x][y].isWire = true
+        }
+    }
+
+    fun getGrid() : Grid{
+        return grid
+    }
+
+    fun getWireGrid() : WireGrid {
+        return wireGrid
+    }
+
+    fun setGridState(grid: Grid, wireGrid: WireGrid) {
+        this.grid = grid
+        this.wireGrid = wireGrid
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    fun unpack(bundle: Bundle) {
+        grid = bundle.getParcelable(PlayGame.gridTag, Grid::class.java)!!
+        wireGrid = bundle.getParcelable(PlayGame.wireTag, WireGrid::class.java)!!
+        invalidate()
     }
 }

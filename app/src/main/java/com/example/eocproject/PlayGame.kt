@@ -11,19 +11,26 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.commit
 import androidx.fragment.app.viewModels
 import com.example.eocproject.databinding.PlayFragBinding
 import org.w3c.dom.Text
 
-class PlayGame : Fragment() {
+class PlayGame(val isCreative: Boolean) : Fragment() {
     companion object {
-        fun newInstance() : PlayGame {
-            return PlayGame()
+        fun newInstance(isCreative: Boolean) : PlayGame {
+            return PlayGame(isCreative)
         }
 
         val playFragTag = "playFragTag"
+        val demoPlayTag = "demoPlayTag"
+        val gridTag = "gridTag"
+        val wireTag = "wireTag"
     }
+
+
     private lateinit var binding: PlayFragBinding
     private var rows = 10
     private var cols = 10
@@ -40,18 +47,24 @@ class PlayGame : Fragment() {
         return binding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val bundle = arguments
+
         game = GameBoard(requireContext(), rows, cols, viewModel)
+        if (bundle != null) {
+            game.unpack(bundle)
+        }
+
         binding.gameBoard.addView(game)
 
         binding.inventory.setBackgroundColor(Color.LTGRAY)
         val itemBag = ItemBag(binding.inventory, requireContext(), viewModel)
         itemBag.initInventory(viewLifecycleOwner)
 
-        if (viewModel.getCreative()) {
+        if (isCreative) {
             binding.creativeLabel.text = "Creative Inventory:"
             binding.creativeItemBag.setBackgroundColor(Color.LTGRAY)
             val creativeBag = ItemBag(binding.creativeItemBag, requireContext(), viewModel)
@@ -62,6 +75,16 @@ class PlayGame : Fragment() {
 
             binding.uploadButton.visibility = View.VISIBLE
             binding.uploadButton.setOnClickListener {  }
+
+            viewModel.observeRunning().observe(viewLifecycleOwner) {
+                if (it!!) {
+                    binding.demoBut.isClickable = false
+                    binding.uploadButton.isClickable = false
+                } else {
+                    binding.demoBut.isClickable = true
+                    binding.uploadButton.isClickable = true
+                }
+            }
         }
 
         viewModel.setIsRunning(false)
@@ -93,6 +116,35 @@ class PlayGame : Fragment() {
                 binding.startBut.setBackgroundColor(Color.GREEN)
             }
         }
-        Log.d("ClearMode", viewModel.getClearMode().toString())
+
+        //Start new fragment of simulating user playing.
+        binding.demoBut.setOnClickListener {
+            Log.d("demo", "start demo")
+            game.returnInv()
+            val grid = game.getGrid()
+            val wire = game.getWireGrid()
+            val inv = viewModel.getInventory()
+            var bundle = Bundle().apply {
+                putParcelable(gridTag, grid)
+                putParcelable(wireTag, wire)
+            }
+
+//            Log.d("test", grid.readBytes().size.toString())
+//            game.loadGrid(grid, wire)
+//            viewModel.loadInventory(inv)
+            parentFragmentManager.commit {  //Start playfrag in user mode.
+                val frag = newInstance(false)
+                frag.arguments = bundle
+                viewModel.resetState()
+                viewModel.setInventory(inv)
+                add(R.id.mainScreen, frag, demoPlayTag)
+                addToBackStack(demoPlayTag)
+                setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                show(frag)
+                hide(parentFragmentManager.findFragmentByTag(playFragTag)!!)
+            }
+        }
     }
+
+
 }
