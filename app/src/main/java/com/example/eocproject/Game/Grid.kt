@@ -1,9 +1,8 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
-import android.util.Log
 import androidx.annotation.RequiresApi
 
 class Grid() : Parcelable{
@@ -74,7 +73,8 @@ class WireGrid() : Parcelable {
         initGrid(rows, cols)
         for (i in 0 until rows) {
             for (j in 0 until cols) {
-                wireGrid[i][j] = GameBoardView.WireInfo(parcel.readBoolean(), false, Origin.GAMEBOARD)
+                wireGrid[i][j] =
+                    GameBoardView.WireInfo(parcel.readBoolean(), false, Origin.GAMEBOARD)
             }
         }
     }

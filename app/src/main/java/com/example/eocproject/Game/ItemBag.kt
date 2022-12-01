@@ -1,20 +1,13 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
-import android.content.ClipData
-import android.content.ClipDescription
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.os.Bundle
-import android.util.Log
 import android.view.DragEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.DragShadowBuilder
-import android.widget.ImageView
 import android.widget.LinearLayout
-import androidx.core.view.size
 import androidx.lifecycle.LifecycleOwner
+import com.example.eocproject.R
 import com.google.android.flexbox.FlexboxLayout
 
 class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: GameViewModel) {
@@ -22,10 +15,14 @@ class ItemBag(var layout: FlexboxLayout, val context: Context, val viewModel: Ga
     val size = (50 * context.getResources().getDisplayMetrics().density).toInt()
 
     companion object {
-        val itemTypeList = arrayOf(ItemType.SOURCE, ItemType.DESTINATION, ItemType.CABLE,
-            ItemType.LIGHT, ItemType.PANEL)
-        val sourceList = arrayOf(R.drawable.power_source, R.drawable.destination, R.drawable.cable,
-            R.drawable.light_bulb, R.drawable.solar_panel)
+        val itemTypeList = arrayOf(
+            ItemType.SOURCE, ItemType.DESTINATION, ItemType.CABLE,
+            ItemType.LIGHT, ItemType.PANEL
+        )
+        val sourceList = arrayOf(
+            R.drawable.power_source, R.drawable.destination, R.drawable.cable,
+            R.drawable.light_bulb, R.drawable.solar_panel
+        )
     }
 
     init {

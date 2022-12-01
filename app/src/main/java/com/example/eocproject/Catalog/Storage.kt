@@ -2,6 +2,7 @@ package com.example.eocproject.Catalog
 
 import android.net.Uri
 import android.util.Log
+import com.google.firebase.FirebaseApp
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import java.io.File
@@ -9,7 +10,7 @@ import java.io.File
 class Storage {
     // Create a storage reference from our app
     private val levelStorage: StorageReference =
-        FirebaseStorage.getInstance().reference.child("images")
+        FirebaseStorage.getInstance().reference.child("levels")
 
     // https://firebase.google.com/docs/storage/android/upload-files#upload_from_a_local_file
     fun uploadFile(localFile: File, uuid: String, uploadSuccess:()->Unit) {

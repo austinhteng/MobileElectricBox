@@ -1,5 +1,6 @@
 package com.example.eocproject.Catalog
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import java.io.File
@@ -29,5 +30,17 @@ class CatalogViewModel : ViewModel() {
             invUUID = iUUID
         )
         dbHelper.createLevelMeta(levelMeta, levelsList)
+    }
+
+    fun observeLevels() : LiveData<List<LevelMeta>> {
+        return levelsList
+    }
+
+    fun getLevel(position: Int) : LevelMeta {
+        return levelsList.value!![position]
+    }
+
+    fun initialFetch() {
+        dbHelper.fetchLevelMeta(levelsList)
     }
 }

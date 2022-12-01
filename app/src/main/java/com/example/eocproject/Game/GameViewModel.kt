@@ -1,12 +1,11 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import java.io.ByteArrayInputStream
+import com.example.eocproject.MainActivity
 import java.io.File
-import java.util.TreeMap
 
 class GameViewModel : ViewModel() {
     private var isRunning = MutableLiveData<Boolean>(false)

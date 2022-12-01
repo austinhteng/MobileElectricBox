@@ -1,19 +1,17 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import java.io.ByteArrayInputStream
 import java.io.File
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import com.example.eocproject.MainActivity
 
 class GameBoard(context: Context,
                 rows: Int,
-                cols: Int, viewModel: GameViewModel) : GameBoardView(context, rows, cols, viewModel) {
+                cols: Int, viewModel: GameViewModel
+) : GameBoardView(context, rows, cols, viewModel) {
 
     fun startGame() {
         viewModel.setIsRunning(true)
@@ -237,7 +235,7 @@ class GameBoard(context: Context,
         }
     }
 
-    fun getGrid() : Grid{
+    fun getGrid() : Grid {
         return grid
     }
 

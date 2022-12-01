@@ -1,4 +1,4 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -11,11 +11,11 @@ import android.util.Log
 import android.view.DragEvent
 import android.view.MotionEvent
 import android.view.View
-import java.util.TreeMap
 
 
 open class GameBoardView(context: Context, val rows: Int, val cols: Int,
-                         val viewModel: GameViewModel) : View(context) {
+                         val viewModel: GameViewModel
+) : View(context) {
     internal var grid = Grid().apply { initGrid(rows, cols) }
     internal var wireGrid = WireGrid().apply { initGrid(rows, cols) }
     private var border: Paint

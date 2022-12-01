@@ -1,4 +1,4 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.content.Context
 import android.graphics.Color

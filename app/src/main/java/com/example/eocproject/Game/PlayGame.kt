@@ -1,4 +1,4 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.app.Activity
 import android.content.Intent
@@ -15,7 +15,6 @@ import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.eocproject.Catalog.CatalogViewModel
-import com.example.eocproject.Catalog.ViewModelDBHelper
 import com.example.eocproject.databinding.PlayFragBinding
 
 
@@ -35,7 +34,6 @@ class PlayGame() : Fragment() {
     }
     private val viewModel: GameViewModel by activityViewModels()
     private val catalogViewModel : CatalogViewModel by activityViewModels()
-    private var levelName = ""
     private lateinit var binding: PlayFragBinding
     private var rows = 10
     private var cols = 10
@@ -55,22 +53,6 @@ class PlayGame() : Fragment() {
             Log.w(javaClass.simpleName, "Bad activity return code ${result.resultCode}")
         }
     }
-
-    private var nameLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            // Get the data that was returned, and display it
-            //SSS
-            val data: Intent? = result.data
-            data?.extras?.apply {
-                levelName = data.getStringExtra(nameTag)!!
-            }
-            //EEE // XXX Write me
-        } else {
-            Log.w(javaClass.simpleName, "Bad activity return code ${result.resultCode}")
-        }
-    }
-
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -106,11 +88,9 @@ class PlayGame() : Fragment() {
             val creativeBag = ItemBag(binding.creativeItemBag, requireContext(), viewModel)
             creativeBag.initCreative()
 
+            binding.name.visibility = View.VISIBLE
             binding.demoBut.visibility = View.VISIBLE
-            binding.demoBut.setOnClickListener {  }
-
             binding.uploadButton.visibility = View.VISIBLE
-            binding.uploadButton.setOnClickListener {  }
 
             viewModel.observeRunning().observe(viewLifecycleOwner) {
                 if (it!!) {
@@ -125,9 +105,13 @@ class PlayGame() : Fragment() {
             viewModel.observeDemoCleared().observe(viewLifecycleOwner) {
                 if (it!!) {
                     binding.uploadButton.setOnClickListener {
-                        val name = promptName()
-
-                        uploadLevel(name)
+                        if (binding.name.text.isNullOrEmpty()) {
+                            val toast = Toast(context)
+                            toast.setText("Please enter a file name.")
+                            toast.show()
+                        } else {
+                            uploadLevel(binding.name.text.toString())
+                        }
                     }
                 } else {
                     binding.uploadButton.setOnClickListener {
@@ -186,13 +170,6 @@ class PlayGame() : Fragment() {
             resultLauncher.launch(demo)
         }
     }
-
-    fun promptName() : String {
-        val name = Intent(context, NamePromptActivity::class.java)
-
-        nameLauncher.launch(name)
-        return levelName
-    }
     fun uploadLevel(name: String) {
         game.returnInv()
         val gridFile = game.exportGrid()
@@ -200,5 +177,6 @@ class PlayGame() : Fragment() {
         val invFile = viewModel.exportInventory()
 
         catalogViewModel.uploadLevel(gridFile, wireFile, invFile, name)
+
     }
 }

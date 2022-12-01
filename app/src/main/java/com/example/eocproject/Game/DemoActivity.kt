@@ -1,4 +1,4 @@
-package com.example.eocproject
+package com.example.eocproject.Game
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,6 +6,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.commit
+import com.example.eocproject.R
 import com.example.eocproject.databinding.ActivityMainBinding
 
 class DemoActivity : AppCompatActivity() {

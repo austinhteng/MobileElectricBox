@@ -9,7 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
-import androidx.fragment.app.viewModels
+import com.example.eocproject.Catalog.CatalogFrag
+import com.example.eocproject.Catalog.CatalogViewModel
+import com.example.eocproject.Game.GameViewModel
+import com.example.eocproject.Game.PlayGame
 import com.example.eocproject.databinding.ContentHomeBinding
 
 class MainMenuFragment: Fragment() {
@@ -22,6 +25,7 @@ class MainMenuFragment: Fragment() {
     }
     private lateinit var binding : ContentHomeBinding
     private val viewModel : GameViewModel by activityViewModels()
+    private val catalogViewModel : CatalogViewModel by activityViewModels()
 
 
     override fun onCreateView(
@@ -42,6 +46,18 @@ class MainMenuFragment: Fragment() {
                 val frag = PlayGame.newInstance()
                 add(R.id.mainScreen, frag, PlayGame.playFragTag)
                 addToBackStack(PlayGame.playFragTag)
+                setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                show(frag)
+                hide(parentFragmentManager.findFragmentByTag(mainMenuFragTag)!!)
+            }
+        }
+
+        binding.oldProjectBut.setOnClickListener {
+            viewModel.isCreative = false
+            parentFragmentManager.commit {
+                val frag = CatalogFrag()
+                add(R.id.mainScreen, frag, CatalogFrag.catalogFragTag)
+                addToBackStack(CatalogFrag.catalogFragTag)
                 setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 show(frag)
                 hide(parentFragmentManager.findFragmentByTag(mainMenuFragTag)!!)

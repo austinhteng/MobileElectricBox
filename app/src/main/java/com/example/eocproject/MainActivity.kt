@@ -9,6 +9,7 @@ import android.widget.Toast
 import com.example.eocproject.databinding.ActivityMainBinding
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.commit
+import com.google.firebase.FirebaseApp
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -34,5 +35,7 @@ class MainActivity : AppCompatActivity() {
 
             setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
         }
+
+        FirebaseApp.initializeApp(applicationContext)
     }
 }

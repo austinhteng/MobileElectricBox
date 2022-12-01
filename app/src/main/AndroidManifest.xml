@@ -25,8 +25,8 @@
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
-        <activity android:name=".DemoActivity"
-            android:exported="false"></activity>
-    </application>
+        <activity android:name=".Game.DemoActivity"
+            android:exported="false"/>
+        </application>
 
 </manifest>
