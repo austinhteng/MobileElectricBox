@@ -3,6 +3,7 @@ package com.example.eocproject.Catalog
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.firebase.storage.StorageReference
 import java.io.File
 import java.util.UUID
 
@@ -13,9 +14,9 @@ class CatalogViewModel : ViewModel() {
 
 
     fun uploadLevel(gridFile: File, wireFile: File, invFile: File, name: String) {
-        val gridUUID = UUID.randomUUID().toString()
-        val wireUUID = UUID.randomUUID().toString()
-        val invUUID = UUID.randomUUID().toString()
+        val gridUUID = gridFile.name
+        val wireUUID = wireFile.name
+        val invUUID = invFile.name
         storage.uploadFile(gridFile, gridUUID) {}
         storage.uploadFile(wireFile, wireUUID) {}
         storage.uploadFile(invFile, invUUID) {}
@@ -43,4 +44,16 @@ class CatalogViewModel : ViewModel() {
     fun initialFetch() {
         dbHelper.fetchLevelMeta(levelsList)
     }
+
+    fun searchStorage(uuid: String, dest: File, flag: MutableLiveData<Boolean>) {
+        val reference = storage.uuid2StorageReference(uuid)
+
+        reference.getFile(dest).addOnSuccessListener {
+            flag.postValue(true)
+        }
+    }
+
+    val gridFileLoad = MutableLiveData<Boolean>(false)
+    val wireFileLoad = MutableLiveData<Boolean>(false)
+    val invFileLoad = MutableLiveData<Boolean>(false)
 }

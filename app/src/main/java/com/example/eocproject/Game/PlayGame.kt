@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.eocproject.Catalog.CatalogViewModel
 import com.example.eocproject.databinding.PlayFragBinding
+import java.util.UUID
 
 
 class PlayGame() : Fragment() {
@@ -172,9 +173,12 @@ class PlayGame() : Fragment() {
     }
     fun uploadLevel(name: String) {
         game.returnInv()
-        val gridFile = game.exportGrid()
-        val wireFile = game.exportWireGrid()
-        val invFile = viewModel.exportInventory()
+        val gridUUID = UUID.randomUUID().toString()
+        val wireUUID = UUID.randomUUID().toString()
+        val invUUID = UUID.randomUUID().toString()
+        val gridFile = game.exportGrid(gridUUID)
+        val wireFile = game.exportWireGrid(wireUUID)
+        val invFile = viewModel.exportInventory(invUUID)
 
         catalogViewModel.uploadLevel(gridFile, wireFile, invFile, name)
 

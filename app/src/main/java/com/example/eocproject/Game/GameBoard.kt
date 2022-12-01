@@ -170,8 +170,8 @@ class GameBoard(context: Context,
                 (buffer[offset + 0].toInt() and 0xff)
     }
 
-    fun exportGrid() : File {
-        val fileGrid = MainActivity.localLevelFile("tempGrid")
+    fun exportGrid(uuid: String) : File {
+        val fileGrid = MainActivity.localLevelFile(uuid)
         fileGrid.writeBytes(write4BytesToBuffer(grid.grid.size))
         fileGrid.writeBytes(write4BytesToBuffer(grid[0].size))
         for (i in 0 until grid.grid.size) {
@@ -187,8 +187,8 @@ class GameBoard(context: Context,
         return fileGrid
     }
 
-    fun exportWireGrid() : File {
-        val fileWire = MainActivity.localLevelFile("tempWire")
+    fun exportWireGrid(uuid: String) : File {
+        val fileWire = MainActivity.localLevelFile(uuid)
         for (i in 0 until wireGrid.wireGrid.size) {
             for (j in 0 until wireGrid[0].size) {
                 if (wireGrid[i][j].isWire && wireGrid[i][j].origin == Origin.GAMEBOARD) {
@@ -211,27 +211,6 @@ class GameBoard(context: Context,
                     wireGrid[i][j] = BLANK_WIRE
                 }
             }
-        }
-    }
-
-    fun loadGrid(gridFile: File, wireGridFile: File) {
-        initBoard()
-
-        val gridBuffer = gridFile.readBytes()
-        for (i in 2 until gridBuffer.size/(4 * 4)) { // 1st 4 for bytes of int, 2nd 4 for 4 ints per item
-            val x = read4BytesFromBuffer(gridBuffer, i*16)
-            val y = read4BytesFromBuffer(gridBuffer, i*16 + 4)
-            val type = read4BytesFromBuffer(gridBuffer, i*16 + 8)
-            val direction = read4BytesFromBuffer(gridBuffer, i*16 + 12)
-            grid[x][y].type = ItemType.fromInt(type)
-            grid[x][y].direction = Direction.fromInt(direction)
-        }
-
-        val wireBuffer = wireGridFile.readBytes()
-        for (i in 0 until wireBuffer.size/(4 * 2)) {
-            val x = read4BytesFromBuffer(wireBuffer, i*8)
-            val y = read4BytesFromBuffer(wireBuffer, i*8 + 4)
-            wireGrid[x][y].isWire = true
         }
     }
 

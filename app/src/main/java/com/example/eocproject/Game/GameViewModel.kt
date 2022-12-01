@@ -108,8 +108,8 @@ class GameViewModel : ViewModel() {
     }
 
     //Must be called after Gameboard export wireGrid && export grid is called
-    fun exportInventory() : File {
-        val fileInv = MainActivity.localLevelFile("tempInv")
+    fun exportInventory(uuid: String) : File {
+        val fileInv = MainActivity.localLevelFile(uuid)
         val inv = inventory.value!!
         for (element in inv) {
             fileInv.writeBytes(write4BytesToBuffer(element))
@@ -117,7 +117,7 @@ class GameViewModel : ViewModel() {
         return fileInv
     }
 
-    fun loadInventory(invFile : File) {
+    fun loadInventory(invFile : File) : IntArray {
         resetInventory()
         var newInv = IntArray(inventory.value!!.size)
         val buffer = invFile.readBytes()
@@ -125,5 +125,6 @@ class GameViewModel : ViewModel() {
         for (i in 0 until newInv.size / 4) {
             newInv[i] = read4BytesFromBuffer(buffer, i*4)
         }
+        return newInv
     }
 }

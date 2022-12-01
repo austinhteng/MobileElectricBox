@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.annotation.RequiresApi
+import java.io.File
 
 class Grid() : Parcelable{
     var grid : ArrayList<ArrayList<ItemData>> = ArrayList()
@@ -61,6 +62,22 @@ class Grid() : Parcelable{
         override fun newArray(size: Int): Array<Grid?> {
             return arrayOfNulls(size)
         }
+
+        fun loadGrid(gridFile: File) : Grid{
+            val gridBuffer = gridFile.inputStream()
+
+            val rows = gridBuffer.read()
+            val cols = gridBuffer.read()
+            var grid = Grid().apply { initGrid(rows, cols) }
+            for (x in 0 until rows) { // 1st 4 for bytes of int, 2nd 4 for 4 ints per item
+                for (y in 0 until cols) {
+                    val type = gridBuffer.read()
+                    val direction = gridBuffer.read()
+                    grid[x][y] = ItemData(ItemType.fromInt(type), Direction.fromInt(direction), Origin.GAMEBOARD)
+                }
+            }
+            return grid
+        }
     }
 }
 
@@ -117,6 +134,9 @@ class WireGrid() : Parcelable {
         override fun newArray(size: Int): Array<WireGrid?> {
             return arrayOfNulls(size)
         }
-    }
 
+        fun loadWire(wireFile: File) : WireGrid {
+            return WireGrid().apply { initGrid(10,10) }
+        }
+    }
 }

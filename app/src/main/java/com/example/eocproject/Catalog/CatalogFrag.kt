@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.eocproject.Game.GameViewModel
 import com.example.eocproject.databinding.CatalogFragBinding
 
 class CatalogFrag() : Fragment() {
@@ -17,6 +18,7 @@ class CatalogFrag() : Fragment() {
     }
 
     val catalogViewModel: CatalogViewModel by viewModels()
+    val gameViewModel: GameViewModel by viewModels()
     lateinit var binding: CatalogFragBinding
 
 
@@ -33,7 +35,7 @@ class CatalogFrag() : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Long press to edit.
-        val adapter = LevelsAdapter(catalogViewModel)
+        val adapter = LevelsAdapter(catalogViewModel, gameViewModel, requireContext(), requireActivity())
 
         val rv = binding.levelsListRV
         val itemDecor = DividerItemDecoration(rv.context, LinearLayoutManager.VERTICAL)
